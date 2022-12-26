@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:polygon_plotter/plotter/controller/plotter_controller.dart';
 import 'package:polygon_plotter/plotter/plotter_screen.dart';
 
 void main() {
@@ -17,9 +18,15 @@ class PlotterApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       home: const PlotterScreen(),
+      initialBinding: PlotterInitialBindings(),
     );
   }
 }
 
-
-
+/// Initial Bindings
+class PlotterInitialBindings extends Bindings {
+  @override
+  void dependencies() {
+    Get.lazyPut<PlotterController>(() => PlotterController());
+  }
+}

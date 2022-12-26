@@ -4,17 +4,17 @@ import 'package:polygon_plotter/plotter/utils/extension_function.dart';
 
 import 'line.dart';
 
-/// Point Node Class
-class PointNode {
+/// Point Class
+class Point {
   final int index;
   final Offset position;
-  final PointNode? next;
+  final Point? next;
   final List<Line> lines;
 
   // Label
   String? get label => index.label;
 
-  // Center between this and next node
+  // Center between this and next point
   Offset? get center {
     return next != null
         ? Offset((position.dx + next!.position.dx) / 2,
@@ -22,21 +22,21 @@ class PointNode {
         : null;
   }
 
-  PointNode({
+  Point({
     required this.index,
     required this.position,
     this.next,
     this.lines = const [],
   });
 
-  /// Method to copy PointNode
-  PointNode copy({
+  /// Method to copy Point
+  Point copy({
     int? index,
     Offset? position,
-    PointNode? next,
+    Point? next,
     List<Line>? lines,
   }) {
-    return PointNode(
+    return Point(
       index: index ?? this.index,
       position: position ?? this.position,
       next: next ?? this.next,
@@ -44,7 +44,7 @@ class PointNode {
     );
   }
 
-  /// Method to convert PointNode to Json
+  /// Method to convert Point to Json
   Map<String, dynamic> toJson() {
     return {
       "index": index,
@@ -72,7 +72,12 @@ class PointNode {
   }
 
   /// Method to check if already connected
-  bool isAlreadyConnected(PointNode node) {
+  bool isAlreadyConnected(Point node) {
     return index == node.next?.index || next?.index == node.index;
+  }
+
+  /// Method to check if two point are same or not
+  bool isSame(Point point) {
+    return index == point.index;
   }
 }

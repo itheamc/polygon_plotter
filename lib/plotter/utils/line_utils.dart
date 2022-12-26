@@ -1,15 +1,15 @@
 import 'dart:math' as math;
 import 'dart:ui';
 import '../models/line.dart';
-import '../models/point_node.dart';
+import '../models/point.dart';
 
 /// LineUtils
 class LineUtils {
   static bool isIntersected(
-      PointNode start, PointNode end, List<PointNode> nodes) {
+      Point start, Point end, List<Point> nodes) {
     final _line = Line(start, end);
 
-    final _temp = List<PointNode>.from(nodes);
+    final _temp = List<Point>.from(nodes);
 
     bool _intersectingBoundaries = false;
 
@@ -81,7 +81,7 @@ class LineUtils {
   }
 
   /// Method to check if point lies on line segment
-  static bool _onSegment(Line line, PointNode point) {
+  static bool _onSegment(Line line, Point point) {
     // Extracting X1, Y1 and X2, Y2 from line
     final lX1 = line.start.position.dx;
     final lY1 = line.start.position.dy;
@@ -100,7 +100,7 @@ class LineUtils {
   }
 
   /// Method to check orientation of a triplet of endpoints
-  static double _orientation(Line line, PointNode point) {
+  static double _orientation(Line line, Point point) {
     // Extracting X1, Y1 and X2, Y2 from line
     final lX1 = line.start.position.dx;
     final lY1 = line.start.position.dy;
@@ -121,13 +121,13 @@ class LineUtils {
   }
 
   /// Method to check if line drawn is with in polygon boundary or not
-  static bool isOutsidePolygon(Line line, List<PointNode> nodes) {
+  static bool isOutsidePolygon(Line line, List<Point> nodes) {
     int _intersectionCount = 0;
 
     for (final n in nodes) {
       final _intersected = _checkIntersection(
-          Line(PointNode(index: -1, position: line.center),
-              PointNode(index: -2, position: Offset(50000.0, line.center.dx))),
+          Line(Point(index: -1, position: line.center),
+              Point(index: -2, position: Offset(50000.0, line.center.dx))),
           Line(n, n.next!));
 
       if (_intersected) {
@@ -139,7 +139,7 @@ class LineUtils {
   }
 
   /// Method to check if line is within polygon boundary
-  static bool _isWithInPolygon(Line line, List<PointNode> nodes) {
+  static bool _isWithInPolygon(Line line, List<Point> nodes) {
     // Extracting Positions
     final _positions = nodes.map((e) => e.position).toList();
 

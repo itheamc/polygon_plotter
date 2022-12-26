@@ -2,14 +2,17 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-import '../models/point_node.dart';
+import '../models/line.dart';
+import '../models/point.dart';
 
 class PlotterPainter extends CustomPainter {
-  final List<PointNode> pointNodes;
-  final PointNode? startingPoint;
+  final List<Point> pointNodes;
+  final List<Line> lines;
+  final Point? startingPoint;
 
   PlotterPainter(
     this.pointNodes, {
+    this.lines = const [],
     this.startingPoint,
   });
 
@@ -63,6 +66,22 @@ class PlotterPainter extends CustomPainter {
         6,
         selectedPointPaint,
       );
+    }
+
+    for (final l in lines) {
+      if (l.distance != 0.0) {
+        final TextPainter textPainter = TextPainter(
+            text: TextSpan(
+              text: "${l.distance}",
+              style: const TextStyle(
+                color: Colors.red,
+              ),
+            ),
+            textAlign: TextAlign.justify,
+            textDirection: TextDirection.ltr)
+          ..layout(maxWidth: 60.0);
+        textPainter.paint(canvas, l.center.translate(7.5, 1));
+      }
     }
   }
 
