@@ -1,87 +1,67 @@
 import 'package:flutter/cupertino.dart';
-import 'package:polygon_plotter/plotter/models/triangle.dart';
 
-import '../models/line.dart';
-import '../models/point.dart';
+import '../models/a_line.dart';
+import '../models/a_point.dart';
+import '../models/a_triangle.dart';
 
 /// -----------------------------------------------------------------------
 /// Extension functions on List of Point
-extension PointNodeListExt on List<Point> {
+extension PointNodeListExt on List<APoint> {
   // Method to remove line
-  void removeLine(Line line) {
-    for (final node in this) {
-      if (node.lines.any((l) =>
-          l.center.dx == line.center.dx && l.center.dy == line.center.dy)) {
-        node.lines.remove(line);
-        break;
+  void removeLine(ALine line) {
+    for (final point in this) {
+      for (int i = 0; i < point.lines.length; i++) {
+        if (line.isSame(point.lines[i])) {
+          point.lines.removeAt(i);
+          return;
+        }
       }
     }
   }
 
   // Method to add line
-  void addLine(Point node, Line line) {
+  void addLine(APoint point, ALine line) {
     for (final n in this) {
-      if (n.index == node.index) {
+      if (n.index == point.index) {
         n.lines.add(line);
-        break;
+        return;
       }
     }
   }
 
-  // Method to get all lines
-  List<Line> get lines {
-    // creating list to contains each and every lines
-    final _lines = List<Line>.empty(growable: true);
-
-    // adding polygons outer lines to the _lines list
-    for (int i = 0; i < length - 1; i++) {
-      _lines.add(Line(this[i], this[i + 1]));
+  // Method to update line
+  void updateLine(ALine line) {
+    for (final point in this) {
+      for (int i = 0; i < point.lines.length; i++) {
+        if (line.isSame(point.lines[i])) {
+          point.lines.removeAt(i);
+          point.lines.insert(i, line);
+          return;
+        }
+      }
     }
-
-    // adding lines drawn inside the polygon in the _lines list
-    for (int i = 0; i < length - 1; i++) {
-      _lines.addAll(this[i].lines);
-    }
-
-    return _lines;
   }
 
-  // Method to check if the line are already drawn
-  bool isLineAlreadyDrawn(Line line) {
-    for (final node in this) {
-      if (node.lines.any((l) =>
-          l.center.dx == line.center.dx && l.center.dy == line.center.dy)) {
-        return true;
+  // Method to get point by offset
+  APoint? pointByOffset(Offset position) {
+    if (isEmpty) return null;
+
+    for (final point in this) {
+      if ((point.position.dx - position.dx).abs() <= 15 &&
+          (point.position.dy - position.dy).abs() <= 15) {
+        return point;
       }
     }
 
-    return false;
-  }
-
-  // Getter for max number of triangles that can be created
-  int get maxPossibleTriangles => length - 1 - 2;
-}
-
-/// -------------------------------------------------------------------------
-/// Extension functions on List of Line
-extension LineListExt on List<Line> {
-  // Method to update Line
-  void updateLine(Line line) {
-    for (int i = 0; i < length; i++) {
-      if (this[i].isSame(line)) {
-        removeAt(i);
-        insert(i, line);
-        break;
-      }
-    }
+    return null;
   }
 
   // Method to get line by offset
-  Line? lineByOffset(Offset position) {
+  ALine? lineByOffset(Offset position) {
     final x = position.dx;
     final y = position.dy;
 
-    for (final l in this) {
+    for (final l in lines) {
       final x1 = l.start.position.dx;
       final y1 = l.start.position.dy;
 
@@ -96,9 +76,68 @@ extension LineListExt on List<Line> {
     return null;
   }
 
+  // Method to get all lines
+  List<ALine> get lines {
+    // creating list to contains each and every lines
+    final _lines = List<ALine>.empty(growable: true);
+
+    // adding polygons outer lines to the _lines list
+    // for (int i = 0; i < length - 1; i++) {
+    //   _lines.add(ALine(this[i], this[i + 1]));
+    // }
+
+    // adding lines drawn inside the polygon in the _lines list
+    for (int i = 0; i < length - 1; i++) {
+      _lines.addAll(this[i].lines);
+    }
+
+    return _lines;
+  }
+
+  // Method to check if the line are already drawn
+  bool isLineAlreadyDrawn(ALine line) {
+    for (final point in this) {
+      if (point.lines.any((l) => line.isSame(l))) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // Getter for max number of triangles that can be created
+  int get maxPossibleTriangles => length - 1 - 2;
+
+  // Boolean to check if polygon is made or not
+  bool get isPolygonDrawn =>
+      isNotEmpty && length > 2 && first.index == last.index;
+
+  // Boolean to check if all triangles are made or not
+  bool get isAllTrianglesAreDrawn =>
+      isPolygonDrawn && lines.triangles.length == maxPossibleTriangles;
+
+  // Method to check if point is ending point
+  bool isEndingPoint(Offset position) {
+    if (isEmpty || length <= 2) return false;
+
+    return (first.position.dx - position.dx).abs() <= 7.5 &&
+        (first.position.dy - position.dy).abs() <= 7.5;
+  }
+
+  // Method to check if points are too close or not
+  bool isTooClose(Offset position) {
+    return any((node) =>
+        (node.position.dx - position.dx).abs() <= 15 &&
+        (node.position.dy - position.dy).abs() <= 15);
+  }
+}
+
+/// -------------------------------------------------------------------------
+/// Extension functions on List of Line
+extension LineListExt on List<ALine> {
   // Method to create triangles from the points and line drawn
-  List<Triangle> get triangles {
-    final _triangles = List<Triangle>.empty(growable: true);
+  List<ATriangle> get triangles {
+    final _triangles = List<ATriangle>.empty(growable: true);
 
     if (isEmpty) return _triangles;
 
@@ -122,7 +161,7 @@ extension LineListExt on List<Line> {
                       line3.start.isSame(line1.end)) ||
                   (line2.end.isSame(line3.start) &&
                       line3.end.isSame(line1.end))) {
-                final _triangle = Triangle(line1, line2, line3);
+                final _triangle = ATriangle(line1, line2, line3);
                 if (!_triangles.isAlreadyFormed(_triangle)) {
                   _triangles.add(_triangle);
                   break;
@@ -133,7 +172,7 @@ extension LineListExt on List<Line> {
                       line3.end.isSame(line1.end)) ||
                   (line3.end.isSame(line2.start) &&
                       line3.end.isSame(line1.end))) {
-                final _triangle = Triangle(line1, line2, line3);
+                final _triangle = ATriangle(line1, line2, line3);
                 if (!_triangles.isAlreadyFormed(_triangle)) {
                   _triangles.add(_triangle);
                   break;
@@ -144,7 +183,7 @@ extension LineListExt on List<Line> {
                       line3.start.isSame(line1.start)) ||
                   (line3.start.isSame(line2.end) &&
                       line3.end.isSame(line1.start))) {
-                final _triangle = Triangle(line1, line2, line3);
+                final _triangle = ATriangle(line1, line2, line3);
                 if (!_triangles.isAlreadyFormed(_triangle)) {
                   _triangles.add(_triangle);
                   break;
@@ -155,7 +194,7 @@ extension LineListExt on List<Line> {
                       line3.end.isSame(line1.start)) ||
                   (line3.end.isSame(line2.start) &&
                       line3.start.isSame(line1.start))) {
-                final _triangle = Triangle(line1, line2, line3);
+                final _triangle = ATriangle(line1, line2, line3);
                 if (!_triangles.isAlreadyFormed(_triangle)) {
                   _triangles.add(_triangle);
                   break;
@@ -172,13 +211,24 @@ extension LineListExt on List<Line> {
 
     return _triangles;
   }
+
+  // Method to update line
+  void updateLine(ALine line) {
+    for (int i = 0; i < length; i++) {
+      if (line.isSame(this[i])) {
+        removeAt(i);
+        insert(i, line);
+        return;
+      }
+    }
+  }
 }
 
 /// ----------------------------------------------------------------------
 /// Extension functions on List of Triangle
-extension TriangleListExt on List<Triangle> {
+extension TriangleListExt on List<ATriangle> {
   // Method to check if triangle already formed adn added to the list
-  bool isAlreadyFormed(Triangle triangle) {
+  bool isAlreadyFormed(ATriangle triangle) {
     return any((t) => t.isSame(triangle));
   }
 
@@ -192,7 +242,7 @@ extension TriangleListExt on List<Triangle> {
       }
     }
 
-    return _area;
+    return !_area.isNaN ? double.parse(_area.toStringAsFixed(4)) : 0;
   }
 }
 

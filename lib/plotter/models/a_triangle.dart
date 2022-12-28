@@ -1,17 +1,17 @@
 import 'dart:math' as math;
-import 'line.dart';
+import 'a_line.dart';
 
 /// Triangle data model class
-class Triangle {
-  final Line a;
-  final Line b;
-  final Line c;
+class ATriangle {
+  final ALine a;
+  final ALine b;
+  final ALine c;
 
   // Constructor
-  Triangle(this.a, this.b, this.c);
+  ATriangle(this.a, this.b, this.c);
 
   /// Method to check if two triangle are equal
-  bool isSame(Triangle triangle) {
+  bool isSame(ATriangle triangle) {
     final _temp = [a, b, c];
 
     return _temp.contains(triangle.a) &&
@@ -28,7 +28,7 @@ class Triangle {
         (semiPerimeter - b.distance) *
         (semiPerimeter - c.distance));
 
-    return double.parse(area.toStringAsFixed(3));
+    return double.parse(area.toStringAsFixed(4));
   }
 
   /// Method to validate triangle
@@ -40,4 +40,15 @@ class Triangle {
 
   /// Method to calculate semi-perimeter
   double get semiPerimeter => (a.distance + b.distance + c.distance) / 2;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ATriangle &&
+      runtimeType == other.runtimeType &&
+      a == other.a &&
+      b == other.b &&
+      c == other.c;
+
+  @override
+  int get hashCode => a.hashCode ^ b.hashCode ^ c.hashCode;
 }

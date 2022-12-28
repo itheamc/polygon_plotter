@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:polygon_plotter/plotter/utils/extension_function.dart';
 
-import '../models/line.dart';
-import '../models/point.dart';
+import '../models/a_line.dart';
+import '../models/a_point.dart';
 import '../utils/line_utils.dart';
 import '../utils/user_event.dart';
 
@@ -15,23 +15,15 @@ class PlotterController extends GetxController {
 
   /// List Of Lines added by the user on polygon except polygon
   /// boundary lines
-  final _listOfLinesDrawnOnPolygon = List<Line>.empty(growable: true);
+  final _listOfLinesDrawnOnPolygon = List<ALine>.empty(growable: true);
 
   ///---------------------------------------------------------------------
 
   ///------------------------For Polygon Points---------------------------
   /// List Of Points
-  final _points = List<Point>.empty(growable: true).obs;
+  final _points = List<APoint>.empty(growable: true).obs;
 
-  List<Point> get points => _points;
-
-  ///---------------------------------------------------------------------
-
-  ///---------List of Lines along with polygon boundary lines-------------
-  /// List of all lines
-  final _listOfLines = List<Line>.empty(growable: true).obs;
-
-  List<Line> get listOfLines => _listOfLines;
+  List<APoint> get points => _points;
 
   ///---------------------------------------------------------------------
 
@@ -39,49 +31,14 @@ class PlotterController extends GetxController {
   /// Start Point
   final _start = _pointAsNull().obs;
 
-  Point? get start => _start.value.index == -1 ? null : _start.value;
+  APoint? get start => _start.value.index == -1 ? null : _start.value;
 
   /// Start Point
   final _end = _pointAsNull().obs;
 
-  Point? get end => _end.value.index == -1 ? null : _end.value;
+  APoint? get end => _end.value.index == -1 ? null : _end.value;
 
   ///---------------------------------------------------------------------
-
-  /// Method to get point by position (offset)
-  Point? _pointByOffset(Offset position) {
-    if (_points.isEmpty) return null;
-    final _tempNode = _points.firstWhereOrNull((node) =>
-        (node.position.dx - position.dx).abs() <= 15 &&
-        (node.position.dy - position.dy).abs() <= 15);
-
-    return _tempNode;
-  }
-
-  /// Boolean to check if polygon is made or not
-  bool get isPolygonDrawn =>
-      _points.isNotEmpty &&
-      _points.length > 2 &&
-      _points.first.index == _points.last.index;
-
-  bool get isAllTrianglesAreDrawn =>
-      isPolygonDrawn &&
-      _points.lines.triangles.length == _points.maxPossibleTriangles;
-
-  /// Method to check if point is ending point
-  bool _isEndingPoint(Offset position) {
-    if (_points.isEmpty || _points.length <= 2) return false;
-
-    return (_points.first.position.dx - position.dx).abs() <= 7.5 &&
-        (_points.first.position.dy - position.dy).abs() <= 7.5;
-  }
-
-  /// Method to check if points are too close or not
-  bool _isTooClose(Offset position) {
-    return _points.any((node) =>
-        (node.position.dx - position.dx).abs() <= 15 &&
-        (node.position.dy - position.dy).abs() <= 15);
-  }
 
   /// --------------------------Public Methods--------------------------
   /// ------------------------------------------------------------------
@@ -95,6 +52,9 @@ class PlotterController extends GetxController {
     if (_listOfUserEvents.last == UserEvent.appPoint) {
       if (_points.isNotEmpty) {
         _points.removeLast();
+        if (_points.isNotEmpty) {
+          _points.removeLine(_points.last.lines.first);
+        }
       }
     } else if (_listOfUserEvents.last == UserEvent.addLine) {
       if (_listOfLinesDrawnOnPolygon.isNotEmpty) {
@@ -107,65 +67,65 @@ class PlotterController extends GetxController {
       }
     }
     _listOfUserEvents.removeLast();
+    update();
   }
 
   /// Method to handle onTap Down
   Future<void> handleOnTapDown(TapDownDetails details) async {
-    if (!isPolygonDrawn) {
+    if (!_points.isPolygonDrawn) {
       _handlePolygonDrawn(details);
       update();
       return;
     }
 
-    if (isAllTrianglesAreDrawn) {
-      if (_listOfLines.isEmpty) {
-        _listOfLines.addAll(_points.lines);
-      }
-      await _handleLineDistanceUpdate(details);
+    if (!_points.isAllTrianglesAreDrawn) {
+      // If polygon is drawn but all triangles are not drawn
+      _handleLineDrawn(details);
       update();
       return;
     }
 
-    // If polygon is drawn
-    _listOfLines.clear();
-    _handleLineDrawn(details);
+    // handle distance update of line
+    await _handleLineDistanceUpdate(details);
     update();
   }
 
   /// Method to handle polygon drawn
   void _handlePolygonDrawn(TapDownDetails details) {
-    if (_isEndingPoint(details.globalPosition)) {
+    if (_points.isEndingPoint(details.localPosition)) {
       final _firstPoint = points.first;
-      final _lastPoint = points.last;
-      final _updatedLastPoint = _lastPoint.copy(
-        next: _firstPoint,
-      );
+      final _lastPoint = points.last.copy();
+      _lastPoint.updateNext(_firstPoint);
 
       _points.removeLast();
-      _points.add(_updatedLastPoint);
+      _points.add(_lastPoint);
       _points.add(_firstPoint);
 
       // Update last user event for undo purpose
       _listOfUserEvents.add(UserEvent.appPoint);
     } else {
-      if (_isTooClose(details.globalPosition)) {
-        _showSnackBar("Too Close!!");
+      if (_points.isTooClose(details.localPosition)) {
+        _showSnackBar("बिन्दु धेरै नजिक हुँदै छ !!");
       } else {
         // add point
-        final point = Point(
+        final point = APoint(
           index: _points.length,
-          position: details.globalPosition,
+          position: details.localPosition,
           lines: List.empty(growable: true),
         );
 
+        if (points.isNotEmpty &&
+            LineUtils.isIntersected(_points.last, point, points)) {
+          _showSnackBar("बिन्दुले बहुभुज सीमालाई काट्न सक्दैन !!");
+          return;
+        }
+
         if (_points.isNotEmpty) {
-          final _lastNode = _points.last;
-          final _updatedLastNode = _lastNode.copy(
-            next: point,
-          );
+          final _lastNode = _points.last.copy();
+          _lastNode.updateNext(point);
 
           _points.removeLast();
-          _points.add(_updatedLastNode);
+          _points.add(_lastNode);
         }
         _points.add(point);
 
@@ -179,10 +139,12 @@ class PlotterController extends GetxController {
   void _handleLineDrawn(TapDownDetails details) {
     // If polygon is drawn
     if (start == null) {
-      _start.value = _pointByOffset(details.globalPosition) ?? _pointAsNull();
+      _start.value =
+          _points.pointByOffset(details.localPosition) ?? _pointAsNull();
       return;
     } else {
-      _end.value = _pointByOffset(details.globalPosition) ?? _pointAsNull();
+      _end.value =
+          _points.pointByOffset(details.localPosition) ?? _pointAsNull();
 
       // If startNode and endNode not equal to null
       if (start != null && end != null) {
@@ -201,7 +163,7 @@ class PlotterController extends GetxController {
         }
 
         // If line already drawn
-        if (_points.isLineAlreadyDrawn(Line(start!, end!))) {
+        if (_points.isLineAlreadyDrawn(ALine(start!, end!))) {
           _start.value = end ?? _pointAsNull();
           _end.value = _pointAsNull();
           return;
@@ -209,19 +171,19 @@ class PlotterController extends GetxController {
 
         // If line is intersecting other lines or polygon boundaries
         if (LineUtils.isIntersected(start!, end!, _points)) {
-          _showSnackBar("Line is intersecting boundaries or another lines!");
+          _showSnackBar("यो रेखाले अर्को रेखालाई काटिरहेको छ!");
           _end.value = _pointAsNull();
           return;
         }
 
         // If line is intersecting other lines or polygon boundaries
-        if (LineUtils.isOutsidePolygon(Line(start!, end!), _points)) {
-          _showSnackBar("Line is outside the polygon!");
+        if (LineUtils.isOutsidePolygon(ALine(start!, end!), _points)) {
+          _showSnackBar("तपाईं बहुभुज सीमा बाहिर रेखा कोर्न सक्नुहुन्न!");
           _end.value = _pointAsNull();
           return;
         }
 
-        final _line = Line(start!, end!);
+        final _line = ALine(start!, end!);
 
         _listOfLinesDrawnOnPolygon.add(_line);
         _listOfUserEvents.add(UserEvent.addLine);
@@ -233,7 +195,7 @@ class PlotterController extends GetxController {
 
   /// Method to set the line distance
   Future<void> _handleLineDistanceUpdate(TapDownDetails details) async {
-    final _l = listOfLines.lineByOffset(details.globalPosition);
+    final _l = _points.lineByOffset(details.localPosition);
 
     if (_l != null) {
       final _textController = TextEditingController();
@@ -271,7 +233,7 @@ class PlotterController extends GetxController {
                     child: ElevatedButton(
                       onPressed: () {
                         if (_textController.text.trim().isNotEmpty) {
-                          _listOfLines.updateLine(
+                          _points.updateLine(
                             _l.copy(
                               distance: double.parse(
                                 _textController.text.trim(),
@@ -296,8 +258,8 @@ class PlotterController extends GetxController {
   ///------------------------Other Utility Methods------------------------
   ///---------------------------------------------------------------------
   /// Method to set point to default that will be considered as null
-  static Point _pointAsNull() {
-    return Point(index: -1, position: Offset.zero);
+  static APoint _pointAsNull() {
+    return APoint(index: -1, position: Offset.zero);
   }
 
   /// Method to show snack bar
@@ -310,5 +272,18 @@ class PlotterController extends GetxController {
         duration: const Duration(milliseconds: 1500),
       ),
     );
+  }
+
+  /// Method to reset all
+  void resetAll({bool updateUi = false}) {
+    _listOfUserEvents.clear();
+    _listOfLinesDrawnOnPolygon.clear();
+    _points.clear();
+    _start.value = _pointAsNull();
+    _end.value = _pointAsNull();
+
+    if (updateUi) {
+      update();
+    }
   }
 }

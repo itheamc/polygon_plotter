@@ -1,15 +1,15 @@
 import 'dart:math' as math;
 import 'dart:ui';
-import '../models/line.dart';
-import '../models/point.dart';
+import '../models/a_line.dart';
+import '../models/a_point.dart';
 
 /// LineUtils
 class LineUtils {
   static bool isIntersected(
-      Point start, Point end, List<Point> nodes) {
-    final _line = Line(start, end);
+      APoint start, APoint end, List<APoint> nodes) {
+    final _line = ALine(start, end);
 
-    final _temp = List<Point>.from(nodes);
+    final _temp = List<APoint>.from(nodes);
 
     bool _intersectingBoundaries = false;
 
@@ -20,7 +20,7 @@ class LineUtils {
           (n.next?.index == start.index)) {
         continue;
       }
-      _intersectingBoundaries = _checkIntersection(_line, Line(n, n.next!));
+      _intersectingBoundaries = _checkIntersection(_line, ALine(n, n.next!));
 
       if (_intersectingBoundaries) break;
     }
@@ -50,7 +50,7 @@ class LineUtils {
   }
 
   /// Method to check intersection
-  static bool _checkIntersection(Line line1, Line line2) {
+  static bool _checkIntersection(ALine line1, ALine line2) {
     // Calculation the orientation of four triple endpoints
     double o1 = _orientation(line1, line2.start);
     double o2 = _orientation(line1, line2.end);
@@ -81,7 +81,7 @@ class LineUtils {
   }
 
   /// Method to check if point lies on line segment
-  static bool _onSegment(Line line, Point point) {
+  static bool _onSegment(ALine line, APoint point) {
     // Extracting X1, Y1 and X2, Y2 from line
     final lX1 = line.start.position.dx;
     final lY1 = line.start.position.dy;
@@ -100,7 +100,7 @@ class LineUtils {
   }
 
   /// Method to check orientation of a triplet of endpoints
-  static double _orientation(Line line, Point point) {
+  static double _orientation(ALine line, APoint point) {
     // Extracting X1, Y1 and X2, Y2 from line
     final lX1 = line.start.position.dx;
     final lY1 = line.start.position.dy;
@@ -121,14 +121,14 @@ class LineUtils {
   }
 
   /// Method to check if line drawn is with in polygon boundary or not
-  static bool isOutsidePolygon(Line line, List<Point> nodes) {
+  static bool isOutsidePolygon(ALine line, List<APoint> nodes) {
     int _intersectionCount = 0;
 
     for (final n in nodes) {
       final _intersected = _checkIntersection(
-          Line(Point(index: -1, position: line.center),
-              Point(index: -2, position: Offset(50000.0, line.center.dx))),
-          Line(n, n.next!));
+          ALine(APoint(index: -1, position: line.center),
+              APoint(index: -2, position: Offset(50000.0, line.center.dx))),
+          ALine(n, n.next!));
 
       if (_intersected) {
         _intersectionCount++;
@@ -139,7 +139,7 @@ class LineUtils {
   }
 
   /// Method to check if line is within polygon boundary
-  static bool _isWithInPolygon(Line line, List<Point> nodes) {
+  static bool _isWithInPolygon(ALine line, List<APoint> nodes) {
     // Extracting Positions
     final _positions = nodes.map((e) => e.position).toList();
 

@@ -1,18 +1,15 @@
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
+import 'package:polygon_plotter/plotter/utils/extension_function.dart';
 
-import '../models/line.dart';
-import '../models/point.dart';
+import '../models/a_point.dart';
 
 class PlotterPainter extends CustomPainter {
-  final List<Point> pointNodes;
-  final List<Line> lines;
-  final Point? startingPoint;
+  final List<APoint> points;
+  final APoint? startingPoint;
 
   PlotterPainter(
-    this.pointNodes, {
-    this.lines = const [],
+    this.points, {
     this.startingPoint,
   });
 
@@ -20,25 +17,27 @@ class PlotterPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     // Paint Object for Polygon
     final linePaint = Paint()
-      ..color = Colors.red
+      ..color = Colors.blue[900] ?? Colors.blue
       ..strokeWidth = 2.0;
 
-    canvas.drawPoints(PointMode.polygon,
-        pointNodes.map((e) => e.position).toList(), linePaint);
+    canvas.drawPoints(
+        PointMode.polygon, points.map((e) => e.position).toList(), linePaint);
 
     // Drawing lines
-    for (final node in pointNodes) {
-      if (node.lines.isNotEmpty) {
-        for (final line in node.lines) {
-          canvas.drawLine(line.start.position, line.end.position, linePaint);
+    for (final point in points) {
+      if (point.lines.isNotEmpty) {
+        for (int i = 0; i < point.lines.length; i++) {
+          if (i == 0) continue;
+          canvas.drawLine(point.lines[i].start.position,
+              point.lines[i].end.position, linePaint);
         }
       }
     }
 
     // Paint Object for Circle
-    final circlePaint = Paint()..color = Colors.red;
+    final circlePaint = Paint()..color = Colors.blue[900] ?? Colors.blue;
 
-    for (final node in pointNodes) {
+    for (final node in points) {
       canvas.drawCircle(
         node.position,
         5,
@@ -48,8 +47,8 @@ class PlotterPainter extends CustomPainter {
       final TextPainter textPainter = TextPainter(
           text: TextSpan(
               text: node.label ?? "hh",
-              style: const TextStyle(
-                color: Colors.red,
+              style: TextStyle(
+                color: Colors.blue[900],
               )),
           textAlign: TextAlign.justify,
           textDirection: TextDirection.ltr)
@@ -68,13 +67,13 @@ class PlotterPainter extends CustomPainter {
       );
     }
 
-    for (final l in lines) {
+    for (final l in points.lines) {
       if (l.distance != 0.0) {
         final TextPainter textPainter = TextPainter(
             text: TextSpan(
               text: "${l.distance}",
-              style: const TextStyle(
-                color: Colors.red,
+              style: TextStyle(
+                color: Colors.blue[900],
               ),
             ),
             textAlign: TextAlign.justify,

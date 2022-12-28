@@ -2,14 +2,14 @@ import 'dart:ui';
 
 import 'package:polygon_plotter/plotter/utils/extension_function.dart';
 
-import 'line.dart';
+import 'a_line.dart';
 
 /// Point Class
-class Point {
+class APoint {
   final int index;
   final Offset position;
-  final Point? next;
-  final List<Line> lines;
+  APoint? next;
+  final List<ALine> lines;
 
   // Label
   String? get label => index.label;
@@ -22,7 +22,7 @@ class Point {
         : null;
   }
 
-  Point({
+  APoint({
     required this.index,
     required this.position,
     this.next,
@@ -30,13 +30,13 @@ class Point {
   });
 
   /// Method to copy Point
-  Point copy({
+  APoint copy({
     int? index,
     Offset? position,
-    Point? next,
-    List<Line>? lines,
+    APoint? next,
+    List<ALine>? lines,
   }) {
-    return Point(
+    return APoint(
       index: index ?? this.index,
       position: position ?? this.position,
       next: next ?? this.next,
@@ -55,29 +55,30 @@ class Point {
     };
   }
 
-  /// Method to remove line
-  /// if index is given, line with that will index will be removed else last added
-  /// line will be removed
-  void removeLine({int? index}) {
-    if (lines.isEmpty) return;
-
-    if (index != null) {
-      if (index >= 0 && index < lines.length) {
-        lines.removeAt(index);
-      }
-      return;
-    }
-
-    lines.removeLast();
+  /// Method to update next point of this point
+  void updateNext(APoint next) {
+    this.next = next;
+    lines.insert(0, ALine(this, this.next!));
   }
 
   /// Method to check if already connected
-  bool isAlreadyConnected(Point node) {
+  bool isAlreadyConnected(APoint node) {
     return index == node.next?.index || next?.index == node.index;
   }
 
   /// Method to check if two point are same or not
-  bool isSame(Point point) {
-    return index == point.index;
+  bool isSame(APoint point) {
+    return this == point;
   }
+
+  @override
+  bool operator ==(Object other) =>
+      other is APoint &&
+      runtimeType == other.runtimeType &&
+      index == other.index &&
+      position.dx == other.position.dx &&
+      position.dy == other.position.dy;
+
+  @override
+  int get hashCode => index.hashCode ^ position.hashCode;
 }
